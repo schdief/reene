@@ -1,0 +1,14 @@
+backend-mock/node_modules/
+reene/node_modules/
+reene/.expo/
+reene/npm-debug.*
+reene/*.jks
+reene/*.p8
+reene/*.p12
+reene/*.key
+reene/*.mobileprovision
+reene/*.orig.*
+reene/web-build/
+
+# macOS
+.DS_Store
