@@ -39,8 +39,8 @@ export default function App() {
           data.append('lng', '13.7636763');
 
           //append date
-          //TODO: get date
-          data.append('date', '2021-04-25T17:44:30.936Z');
+          let date = new Date();
+          data.append('date', date.toISOString());
 
           //append picture
           data.append('file', ''); //not sure why it is in the original request...
