@@ -1,78 +1,178 @@
 import React from 'react';
 import axios from 'axios';
-import { StyleSheet, Text, Button, View } from 'react-native';
+import { StyleSheet, Text, Button, View, TouchableOpacity, Image, ImageBackground, Alert } from 'react-native';
+import { Camera } from 'expo-camera';
+let camera: Camera
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Reene</Text>
-      <Button
-        title="Schandfleck fotografieren"
-        onPress={() => {
-            //TODO: take picture
-        }}
-      />
-      <Button
-        title="mache reene"
-        color="#f194ff"
-        onPress={() => {
-          const data = new FormData();
-          //yes we want feedback, 0 for no feedback
-          data.append('resprequ', 1);
 
-          //specify kind of dirt
-          data.append('dirtkey', 'sonst');
+    const [startCamera, setStartCamera] = React.useState(false)
+    const [previewVisible, setPreviewVisible] = React.useState(false)
+    const [capturedImage, setCapturedImage] = React.useState(null)
+    const [cameraType, setCameraType] = React.useState(Camera.Constants.Type.back)
 
-          //description
-          data.append('desc', 'Müll');
+    //before we can start the camera we need to request and check camera permissions
+    const __startCamera = async () => {
+        const {status} = await Camera.requestPermissionsAsync()
+        if (status === 'granted') {
+            setStartCamera(true)
+        } else {
+            Alert.alert('Access to camera denied')
+        }
+    }
 
-          //reporter data
-          //TODO: add form to let user enter own data and save it locally
-          data.append('rlname', 'Lohr');
-          data.append('rfname', 'Steve');
-          data.append('remail', '');
-          data.append('rtel', '');
+    //take a picture and open preview
+    const __takePicture = async () => {
+        const photo: any = await camera.takePictureAsync()
+        setPreviewVisible(true)
+        setCapturedImage(photo)
+    }
 
-          //append gps location
-          //TODO: get gps location
-          data.append('lat', '51.0529371');
-          data.append('lng', '13.7636763');
+    //send data to dreckweg
+    const __savePhoto = () => {
+        const data = new FormData();
+        //yes we want feedback, 0 for no feedback
+        data.append('resprequ', 1);
+        //specify kind of dirt
+        data.append('dirtkey', 'sonst');
+        //description
+        data.append('desc', 'Müll');
+        //reporter data
 
-          //append date
-          let date = new Date();
-          data.append('date', date.toISOString());
+        //TODO: add form to let user enter own data and save it locally
+        data.append('rlname', 'Lohr');
+        data.append('rfname', 'Steve');
+        data.append('remail', '');
+        data.append('rtel', '');
 
-          //append picture
-          data.append('file', ''); //not sure why it is in the original request...
-          //TODO: use taken picture
-          data.append('file', new Blob(['test payload'], { type: 'image/jpeg' }));
+        //append gps location
+        //TODO: get gps location
+        data.append('lat', '51.0529371');
+        data.append('lng', '13.7636763');
 
-          const header = {
+        //append date
+        let date = new Date();
+        data.append('date', date.toISOString());
+
+        //append picture
+        data.append('file', ''); //not sure why it is in the original request...
+        //TODO: use taken picture
+        data.append('file', new Blob(['test payload'], { type: 'image/jpeg' }));
+
+        //set request headers
+        const header = {
             headers: {
-               //'Host': 'dreckweg.dresden.de',
-               'Content-Type': 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary',
-               //'Accept-Encoding': 'gzip; deflate; br',
-               //'Connection': 'keep-alive',
-               'Accept': '*/*',
-               'Accept-Language': 'de-de',
-               'X-Requested-With': 'XMLHttpRequest'
-             }
-          }
+                //'Host': 'dreckweg.dresden.de',
+                'Content-Type': 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary',
+                //'Accept-Encoding': 'gzip; deflate; br',
+                //'Connection': 'keep-alive',
+                'Accept': '*/*',
+                'Accept-Language': 'de-de',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }
 
-          //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
-          axios.post('http://localhost:8000', data, header)
-               .then(function (response) {
-                 //TODO: get visual feedback
-                 console.log(response);
-               })
-               .catch(function (error) {
-                 //TODO: get visual feedback
-                 console.log(error);
-               });
-        }}
-      />
-    </View>
-  );
+        //finally send data to dreckweg
+        //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
+        axios.post('http://localhost:8000', data, header)
+             .then(function (response) {
+                //TODO: get visual feedback
+                console.log(response);
+             })
+             .catch(function (error) {
+                //TODO: get visual feedback
+                console.log(error);
+             });
+    }
+
+    //either render start screen, or camera interface/image preview
+    //picture is already taken? then show preview and send dialogue
+    if(previewVisible && capturedImage) {
+        return (
+            <View style={styles.container}>
+                <View style={{
+                    flex: 1,
+                    width: '100%'
+                }}>
+                    <CameraPreview photo={capturedImage} savePhoto={__savePhoto} />
+                </View>
+            </View>
+        )
+    }
+    //display camera feed if no picture has been taken yet, but camera button was triggered
+    if(startCamera) {
+        return (
+            <View style={styles.container}>
+                <View style={{
+                    flex: 1,
+                    width: '100%'
+                }}>
+                    //TODO: move to separate const like CameraPreview
+                    <Camera
+                        type={cameraType}
+                        style={{flex: 1}}
+                        ref={(r) => {
+                            camera = r
+                        }}
+                    >
+                        //overlay button to take picture
+                        <View style={{
+                            alignSelf: 'center',
+                            flex: 1,
+                            alignItems: 'center'
+                        }}>
+                            <TouchableOpacity
+                                onPress={__takePicture}
+                                style={{
+                                    width: 70,
+                                    height: 70,
+                                    bottom: 0,
+                                    borderRadius: 50,
+                                    backgroundColor: '#fff'
+                                }}
+                            />
+                        </View>
+                    </Camera>
+                </View>
+            </View>
+        )
+    }
+    //render startup screen in case no picture was taken yet and camera button wasn't triggered
+    return (
+        <View style={styles.container}>
+            //show startup screen
+            //TODO: move to separate const like CameraPreview
+            <View style={{
+                flex: 1,
+                backgroundColor: '#fff',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}
+            >
+                <Text>Reene</Text>
+                <TouchableOpacity
+                    onPress={__startCamera}
+                    style={{
+                        width: 130,
+                        borderRadius: 4,
+                        backgroundColor: '#14274e',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: 40
+                    }}
+                >
+                    <Text style={{
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        textAlign: 'center'
+                    }}>
+                        Schande fotografieren
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -80,6 +180,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    justifyContent: 'center'
+  }
+})
+
+//screen to render when picture was taken and to send report
+const CameraPreview = ({photo, savePhoto}: any) => {
+    return (
+        <View style={{
+            backgroundColor: 'transparent',
+            flex: 1,
+            width: '100%',
+            height: '100%'
+        }}>
+            //TODO: don't use it as background but only big preview with send button below
+            //display taken image as background
+            <ImageBackground
+                source={{uri: photo && photo.uri}}
+                style={{
+                    flex: 1
+                }}
+            >
+                <TouchableOpacity
+                    onPress={savePhoto}
+                    style={{
+                        width: 130,
+                        height: 40,
+                        alignItems: 'center',
+                        borderRadius: 4
+                    }}
+                >
+                    <Text style={{
+                        color: '#fff',
+                        fontSize: 20
+                    }}>
+                        mache reene
+                    </Text>
+                </TouchableOpacity>
+            </ImageBackground>
+        </View>
+    )
+}
