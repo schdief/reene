@@ -31,6 +31,7 @@ const requestListener = function (req, res) {
             res.write('received upload:\n\n');
 
             //log received data
+            console.log("new request received:")
             console.log(util.inspect({fields: fields, files: files}))
             // This last line responds to the form submission with a list of the parsed data and files.
             res.end(util.inspect({fields: fields, files: files}));
