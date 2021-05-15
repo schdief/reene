@@ -2,7 +2,6 @@ import React from 'react';
 import axios from 'axios';
 import { StyleSheet, Text, Button, View, TouchableOpacity, Image, ImageBackground, Alert } from 'react-native';
 import { Camera } from 'expo-camera';
-import ReactNativeBlobUtil from 'react-native-blob-util';
 let camera: Camera
 
 export default function App() {
@@ -29,51 +28,68 @@ export default function App() {
         setPreviewVisible(true)
     }
 
-    async function photoToBlob(sourceUrl) {
-        // first get our hands on the local file
-        const localFile = await fetch(sourceUrl);
-        // then create a blob out of it (only works with RN 0.54 and above)
-        const fileBlob = await localFile.blob();
-        return fileBlob;
-    }
-
     //send data to dreckweg
-    const __savePhoto = ({photo}) => {
-         //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
-         ReactNativeBlobUtil.fetch('POST', 'http://localhost:8000', {
-            'Accept': '*/*',
-            'Accept-Language': 'de-de',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type' : 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary'
-         }, [
-            // append field data from file path
-            {
-              name : 'file',
-              filename : 'file',
-              // Change BASE64 encoded data to a file path with prefix `ReactNativeBlobUtil-file://`.
-              // Or simply wrap the file path with ReactNativeBlobUtil.wrap().
-              data: ReactNativeBlobUtil.wrap(capturedImage.uri)
-            },
-            // elements without property `filename` will be sent as plain text
-            { name : 'resprequ', data : 0},
-            { name : 'dirtkey', data : 'sonst'},
-            { name : 'desc', data : 'Müll'},
-            { name : 'rlname', data : ''},
-            { name : 'rfname', data : ''},
-            { name : 'remail', data : ''},
-            { name : 'rtel', data : ''},
-            { name : 'lat', data : 51.0529371},
-            { name : 'lng', data : 13.7636763},
-            { name : 'date', data : new Date().toISOString()},
-         ]).then((resp) => {
-            //TODO: get visual feedback
-            console.log(resp);
-         }).catch((err) => {
-            //TODO: get visual feedback
-            console.log(err);
-         })
-        //TODO: add form to let user enter own data and save it locally
-        //TODO: get gps location
+    const __savePhoto = () => {
+         //send data to dreckweg
+
+                //TODO: add form to let user enter own data and save it locally
+
+                 const data = new FormData();
+                 //yes we want feedback, 0 for no feedback
+                 data.append('resprequ', 1);
+                 //specify kind of dirt
+                 data.append('dirtkey', 'sonst');
+                 //description
+                 data.append('desc', 'Müll');
+                 //reporter data
+
+                 //TODO: add form to let user enter own data and save it locally
+                 data.append('rlname', 'Lohr');
+                 data.append('rfname', 'Steve');
+                 data.append('remail', '');
+                 data.append('rtel', '');
+
+                 //append gps location
+                 //TODO: get gps location
+                 data.append('lat', '51.0529371');
+                 data.append('lng', '13.7636763');
+
+                 //append date
+                 let date = new Date();
+                 data.append('date', date.toISOString());
+
+                 //append picture
+                 let picture = {
+                    uri: capturedImage,
+                    type: 'image/jpeg',
+                    name: 'file'
+                 };
+                 data.append('file', picture);
+
+                 //set request headers
+                 const header = {
+                     headers: {
+                         //'Host': 'dreckweg.dresden.de',
+                         'Content-Type': 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary',
+                         //'Accept-Encoding': 'gzip; deflate; br',
+                         //'Connection': 'keep-alive',
+                         'Accept': '*/*',
+                         'Accept-Language': 'de-de',
+                         'X-Requested-With': 'XMLHttpRequest'
+                     }
+                 }
+
+                 //finally send data to dreckweg
+                 //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
+                 axios.post('http://localhost:8000', data, header)
+                      .then(function (response) {
+                         //TODO: get visual feedback
+                         console.log(response);
+                      })
+                      .catch(function (error) {
+                         //TODO: get visual feedback
+                         console.log(error);
+                      });
     }
 
     //either render start screen, or camera interface/image preview
