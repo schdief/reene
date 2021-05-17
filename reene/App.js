@@ -23,6 +23,7 @@ export default function App() {
 
     //take a picture and open preview
     const __takePicture = async () => {
+        //TODO: take a jpeg instead of png
         const photo: any = await camera.takePictureAsync()
         setCapturedImage(photo)
         setPreviewVisible(true)
@@ -30,66 +31,55 @@ export default function App() {
 
     //send data to dreckweg
     const __savePhoto = () => {
-         //send data to dreckweg
+        //send data to dreckweg
+        const data = new FormData();
+        //yes we want feedback, 0 for no feedback
+        data.append('resprequ', 1);
+        //specify kind of dirt
+        data.append('dirtkey', 'sonst');
+        //description
+        data.append('desc', 'Müll');
+        //reporter data
+        //TODO: add form to let user enter own data and save it locally
+        data.append('rlname', 'Lohr');
+        data.append('rfname', 'Steve');
+        data.append('remail', '');
+        data.append('rtel', '');
+        //append gps location
+        //TODO: get gps location
+        data.append('lat', '51.0529371');
+        data.append('lng', '13.7636763');
+        //append date
+        let date = new Date();
+        data.append('date', date.toISOString());
+        //append picture
+        data.append('file', dataURItoBlob(capturedImage.base64), 'file');
 
-                //TODO: add form to let user enter own data and save it locally
+        //set request headers
+        const header = {
+            headers: {
+                //'Host': 'dreckweg.dresden.de',
+                'Content-Type': 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary',
+                //'Accept-Encoding': 'gzip; deflate; br',
+                //'Connection': 'keep-alive',
+                'Accept': '*/*',
+                'Accept-Language': 'de-de',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }
 
-                 const data = new FormData();
-                 //yes we want feedback, 0 for no feedback
-                 data.append('resprequ', 1);
-                 //specify kind of dirt
-                 data.append('dirtkey', 'sonst');
-                 //description
-                 data.append('desc', 'Müll');
-                 //reporter data
+        //finally send data to dreckweg
+        //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
 
-                 //TODO: add form to let user enter own data and save it locally
-                 data.append('rlname', 'Lohr');
-                 data.append('rfname', 'Steve');
-                 data.append('remail', '');
-                 data.append('rtel', '');
-
-                 //append gps location
-                 //TODO: get gps location
-                 data.append('lat', '51.0529371');
-                 data.append('lng', '13.7636763');
-
-                 //append date
-                 let date = new Date();
-                 data.append('date', date.toISOString());
-
-                 //append picture
-                 let picture = {
-                    uri: capturedImage,
-                    type: 'image/jpeg',
-                    name: 'file'
-                 };
-                 data.append('file', picture);
-
-                 //set request headers
-                 const header = {
-                     headers: {
-                         //'Host': 'dreckweg.dresden.de',
-                         'Content-Type': 'multipart/form-data; boundary=+++++org.apache.cordova.formBoundary',
-                         //'Accept-Encoding': 'gzip; deflate; br',
-                         //'Connection': 'keep-alive',
-                         'Accept': '*/*',
-                         'Accept-Language': 'de-de',
-                         'X-Requested-With': 'XMLHttpRequest'
-                     }
-                 }
-
-                 //finally send data to dreckweg
-                 //TODO: use real URL: https://dreckweg.dresden.de/DreckWeg/AppDataServlet
-                 axios.post('http://localhost:8000', data, header)
-                      .then(function (response) {
-                         //TODO: get visual feedback
-                         console.log(response);
-                      })
-                      .catch(function (error) {
-                         //TODO: get visual feedback
-                         console.log(error);
-                      });
+        axios.post('http://localhost:8001', data, header)
+             .then(function (response) {
+                //TODO: get visual feedback
+                console.log(response);
+             })
+             .catch(function (error) {
+                //TODO: get visual feedback
+                console.log(error);
+             });
     }
 
     //either render start screen, or camera interface/image preview
@@ -227,4 +217,22 @@ const CameraPreview = ({photo, savePhoto}: any) => {
             </ImageBackground>
         </View>
     )
+}
+
+function dataURItoBlob(dataURI) {
+    // convert base64 to raw binary data held in a string
+    var byteString = atob(dataURI.split(',')[1]);
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+    // write the bytes of the string to an ArrayBuffer
+    var ab = new ArrayBuffer(byteString.length);
+    // create a view into the buffer
+    var ia = new Uint8Array(ab);
+    // set the bytes of the buffer to the correct values
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    // write the ArrayBuffer to a blob, and you're done
+    var blob = new Blob([ab], {type: mimeString});
+    return blob;
 }

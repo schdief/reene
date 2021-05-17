@@ -2,7 +2,7 @@ var formidable = require('formidable'),
         http = require('http'),
         util = require('util');
 const host = 'localhost';
-const port = 8000;
+const port = 8001;
 
 const requestListener = function (req, res) {
     // Set CORS headers
@@ -21,6 +21,7 @@ const requestListener = function (req, res) {
         // Instantiate a new formidable form for processing.
         var form = new formidable.IncomingForm();
         // form.parse analyzes the incoming stream data, picking apart the different fields and files for you.
+
         form.parse(req, function(err, fields, files) {
             if (err) {
                 // Check for and handle any errors here.
@@ -29,6 +30,14 @@ const requestListener = function (req, res) {
               }
             res.writeHead(200, {'content-type': 'text/plain'});
             res.write('received upload:\n\n');
+
+            //check for files
+            if (!files | (Object.keys(files).length == 0)) {
+                console.log('empty');
+                return;
+              } else {
+                console.log('file yay');
+              }
 
             //log received data
             console.log("new request received:")
